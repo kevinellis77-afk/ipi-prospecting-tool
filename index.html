@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>IPI Prospecting Tool v1</title>
+  <title>IPI Prospecting Tool v1.1</title>
   <style>
     :root{
       --ipi-charcoal:#36454F;
@@ -161,7 +161,7 @@
           <img src="https://ipintegration.com/wp-content/uploads/2021/12/IPIlogo.svg" alt="IP Integration">
         </div>
         <div class="brand-copy">
-          <h1>Prospecting Tool v1</h1>
+          <h1>Prospecting Tool v1.1</h1>
           <p>Target Partners · Channel Prioritisation</p>
         </div>
       </div>
@@ -233,6 +233,7 @@
     </aside>
 
     <main class="main">
+      <div id="appError" class="section-card" style="display:none;margin-bottom:12px;padding:14px 16px;border-color:#C8988C;background:#fff5f3;color:#4F3645;font-weight:700"></div>
       <div class="tabs">
         <button class="tab active" data-view="prospects">Prospect Search</button>
         <button class="tab" data-view="quality">Data Quality Queue</button>
@@ -245,7 +246,7 @@
             <h2>Shortlist faster. <span style="color:var(--ipi-green)">Score transparently.</span> Move to outreach with context.</h2>
             <p>Built from the Target Partners sheet and aligned to the IPI prospecting model. The interface is list-first because prospecting work is comparison work, not dashboard theatre.</p>
             <div class="hero-meta">
-              <span class="pill">97 partner records</span>
+              <span class="pill" id="heroRecordCount">0 partner records</span>
               <span class="pill">Weighted scoring</span>
               <span class="pill">Local workflow state</span>
               <span class="pill">Brand aligned UI</span>
@@ -301,8 +302,9 @@
           <div class="panel-head">
             <div>
               <h3 class="panel-title">Data Quality Queue</h3>
-              <div class="panel-sub">Use this queue to tighten confidence: fill missing turnover, LinkedIn, location and notes first.</div>
+              <div class="panel-sub">Use this queue to tighten confidence: fill missing turnover, LinkedIn, website, notes, vendors and services first.</div>
             </div>
+            <div class="toolbar-inline" id="qualityFilters"></div>
           </div>
           <div class="table-wrap">
             <table>
