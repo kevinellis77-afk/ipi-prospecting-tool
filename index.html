@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>IPI Prospecting Tool v1</title>
+  <style>
+    :root{
+      --ipi-charcoal:#36454F;
+      --ipi-dark:#263337;
+      --ipi-slate:#383B4F;
+      --ipi-mauve:#A37992;
+      --ipi-mauve-dark:#4F3645;
+      --ipi-green:#63AB8F;
+      --ipi-green-dark:#82BBA5;
+      --ipi-salmon:#C8988C;
+      --bg:#EFF6F3;
+      --bg-soft:#F7FDFF;
+      --card:#FFFFFF;
+      --line:#D6DADB;
+      --text:#263337;
+      --muted:#5E6A72;
+      --muted-2:#878995;
+      --shadow-sm:0 8px 22px rgba(38,51,55,.08);
+      --shadow-md:0 18px 40px rgba(38,51,55,.12);
+      --radius-sm:12px;
+      --radius-md:18px;
+      --radius-lg:24px;
+      --sidebar-w:304px;
+      --drawer-w:420px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:"Proxima Nova", Aptos, "Segoe UI", Inter, Arial, sans-serif;
+      background:linear-gradient(180deg,#F7FDFF 0%, #EFF6F3 100%);
+      color:var(--text);
+      overflow:hidden;
+    }
+    .app{height:100vh;display:grid;grid-template-columns:var(--sidebar-w) 1fr;grid-template-rows:78px 1fr;grid-template-areas:"top top" "side main";}
+    .topbar{grid-area:top;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:16px 22px;background:rgba(255,255,255,.82);border-bottom:1px solid rgba(54,69,79,.1);backdrop-filter: blur(16px);position:relative;z-index:20;}
+    .brand-wrap{display:flex;align-items:center;gap:16px;min-width:280px}
+    .brand-card{background:var(--ipi-dark);padding:10px 14px;border-radius:16px;box-shadow:var(--shadow-sm);display:flex;align-items:center;justify-content:center;}
+    .brand-card img{height:34px;display:block}
+    .brand-copy h1{margin:0;font-size:20px;line-height:1.1;letter-spacing:-.02em;color:var(--ipi-charcoal);}
+    .brand-copy p{margin:4px 0 0;color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;}
+    .top-controls{display:flex;align-items:center;gap:12px;flex:1;justify-content:flex-end;min-width:0}
+    .search-wrap{display:flex;align-items:center;gap:10px;flex:1;max-width:560px;border:1px solid rgba(54,69,79,.12);background:#fff;border-radius:999px;padding:10px 16px;box-shadow:var(--shadow-sm);}
+    .search-wrap input{border:0;outline:none;background:transparent;width:100%;font-size:14px;color:var(--text);}
+    .btn{border:1px solid rgba(54,69,79,.12);background:#fff;color:var(--text);height:42px;padding:0 14px;border-radius:999px;font-weight:700;font-size:13px;cursor:pointer;box-shadow:var(--shadow-sm);transition:.2s ease;display:inline-flex;align-items:center;gap:8px;}
+    .btn:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+    .btn-primary{background:var(--ipi-charcoal);color:#fff;border-color:var(--ipi-charcoal)}
+    .btn-accent{background:var(--ipi-green);color:#fff;border-color:var(--ipi-green)}
+    .sidebar{grid-area:side;padding:18px 18px 22px;overflow:auto;border-right:1px solid rgba(54,69,79,.08);background:rgba(255,255,255,.68);backdrop-filter:blur(10px);}
+    .main{grid-area:main;overflow:auto;padding:18px 22px 28px;}
+    .section-card{background:var(--card);border:1px solid rgba(54,69,79,.08);border-radius:var(--radius-md);box-shadow:var(--shadow-sm);margin-bottom:16px;}
+    .side-card-head{padding:16px 16px 10px;display:flex;align-items:center;justify-content:space-between;}
+    .side-card-head h3{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800}
+    .side-card-body{padding:0 16px 16px}
+    .filter-group{padding-top:12px;border-top:1px solid rgba(54,69,79,.08);margin-top:12px}
+    .filter-group:first-child{border-top:none;margin-top:0;padding-top:0}
+    .filter-group h4{margin:0 0 10px;font-size:12px;font-weight:800;color:var(--ipi-charcoal);letter-spacing:.03em}
+    .check-grid{display:grid;grid-template-columns:1fr;gap:8px}
+    .check{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text);}
+    .check input[type=checkbox]{accent-color:var(--ipi-green)}
+    .range-row{display:flex;align-items:center;gap:10px}
+    .range-row input[type=range]{flex:1;accent-color:var(--ipi-green)}
+    .range-row output{min-width:44px;text-align:center;padding:6px 8px;border-radius:999px;background:#EDF6F1;font-size:12px;font-weight:800;color:var(--ipi-green);}
+    .select, .textarea{width:100%;border:1px solid rgba(54,69,79,.12);border-radius:12px;background:#fff;padding:10px 12px;font:inherit;color:var(--text);}
+    .textarea{min-height:108px;resize:vertical}
+    .stack{display:grid;gap:10px}
+    .tabs{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;}
+    .tab{border:none;background:#fff;padding:12px 16px;border-radius:999px;font-weight:800;color:var(--muted);box-shadow:var(--shadow-sm);cursor:pointer;font-size:13px;}
+    .tab.active{background:var(--ipi-charcoal);color:#fff}
+    .view{display:none}
+    .view.active{display:block}
+    .hero{display:grid;grid-template-columns:1.6fr 1fr;gap:18px;margin-bottom:16px;}
+    .hero-card{background:linear-gradient(135deg,var(--ipi-dark),var(--ipi-charcoal));color:#fff;padding:22px 24px;border-radius:var(--radius-lg);box-shadow:var(--shadow-md);position:relative;overflow:hidden;}
+    .hero-card::after{content:'';position:absolute;inset:0;background:radial-gradient(circle at 82% 20%, rgba(99,171,143,.24), transparent 26%),radial-gradient(circle at 18% 88%, rgba(163,121,146,.18), transparent 24%);pointer-events:none;}
+    .hero-card h2{position:relative;z-index:1;margin:0;font-size:31px;line-height:1.05;letter-spacing:-.03em}
+    .hero-card p{position:relative;z-index:1;margin:10px 0 0;color:rgba(255,255,255,.78);font-size:14px;line-height:1.6;max-width:720px}
+    .hero-meta{position:relative;z-index:1;display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;}
+    .pill{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.1);color:#fff;padding:7px 10px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;}
+    .hero-side{background:#fff;border-radius:var(--radius-lg);padding:18px;box-shadow:var(--shadow-sm);border:1px solid rgba(54,69,79,.08);display:grid;gap:10px;align-content:start;}
+    .hero-side h3{margin:0;font-size:13px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+    .hero-side .line{font-size:13px;color:var(--text);line-height:1.5}
+    .kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-bottom:16px;}
+    .kpi{background:#fff;border-radius:18px;padding:16px 16px;box-shadow:var(--shadow-sm);border:1px solid rgba(54,69,79,.08);display:grid;gap:6px;cursor:pointer;transition:.2s ease;}
+    .kpi:hover{transform:translateY(-2px);box-shadow:var(--shadow-md)}
+    .kpi .top{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+    .kpi .value{font-size:30px;font-weight:800;letter-spacing:-.03em;color:var(--text)}
+    .kpi .meta{font-size:12px;color:var(--muted)}
+    .panel{background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-sm);border:1px solid rgba(54,69,79,.08);overflow:hidden;}
+    .panel-head{padding:14px 16px;border-bottom:1px solid rgba(54,69,79,.08);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+    .panel-title{margin:0;font-size:16px;color:var(--ipi-charcoal);letter-spacing:-.01em}
+    .panel-sub{font-size:12px;color:var(--muted)}
+    .table-wrap{overflow:auto}
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    th,td{padding:12px 12px;border-bottom:1px solid rgba(54,69,79,.08);text-align:left;vertical-align:top}
+    th{position:sticky;top:0;background:#F7FDFF;z-index:2;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:800;cursor:pointer;white-space:nowrap;}
+    td{font-size:13px;color:var(--text)}
+    tbody tr{transition:.15s ease}
+    tbody tr:hover{background:#F7FDFF}
+    .name-cell{min-width:260px}
+    .name-main{font-weight:800;color:var(--ipi-charcoal);font-size:14px}
+    .name-sub{font-size:12px;color:var(--muted);margin-top:4px}
+    .badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;font-size:11px;font-weight:800;letter-spacing:.04em;white-space:nowrap}
+    .tier1{background:#EDF6F1;color:var(--ipi-green)}
+    .tier2{background:#F3EDF1;color:var(--ipi-mauve)}
+    .tier3{background:#F2E7E5;color:var(--ipi-salmon)}
+    .tier4{background:#EAECED;color:var(--muted)}
+    .score-cell{min-width:120px}
+    .score-main{display:flex;align-items:center;gap:8px;font-weight:800}
+    .score-bar{height:8px;border-radius:999px;background:#EAECED;overflow:hidden;margin-top:6px}
+    .score-bar > span{display:block;height:100%;background:linear-gradient(90deg,var(--ipi-green),var(--ipi-mauve))}
+    .chip-row{display:flex;gap:6px;flex-wrap:wrap}
+    .chip{display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:#F7FDFF;border:1px solid #E7F9FF;font-size:11px;font-weight:700;color:var(--ipi-charcoal)}
+    .chip.soft{background:#fff;border-color:rgba(54,69,79,.08);color:var(--muted)}
+    .drawer{position:fixed;top:0;right:-460px;height:100vh;width:var(--drawer-w);background:#fff;box-shadow:-24px 0 48px rgba(38,51,55,.16);transition:.25s ease;z-index:30;border-left:1px solid rgba(54,69,79,.08);display:flex;flex-direction:column;}
+    .drawer.open{right:0}
+    .drawer-head{padding:18px 18px 14px;border-bottom:1px solid rgba(54,69,79,.08);display:grid;gap:12px}
+    .drawer-close{position:absolute;top:16px;right:16px;border:none;background:#F7FDFF;border-radius:999px;width:34px;height:34px;cursor:pointer;font-size:20px;color:var(--muted)}
+    .drawer-body{padding:18px;overflow:auto;display:grid;gap:16px}
+    .drawer-title{margin:0;font-size:24px;line-height:1.05;letter-spacing:-.03em;color:var(--ipi-charcoal);padding-right:40px}
+    .drawer-kpis,.drawer-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .drawer-card{border:1px solid rgba(54,69,79,.08);border-radius:16px;padding:14px;background:#fff;box-shadow:var(--shadow-sm)}
+    .drawer-card h4{margin:0 0 10px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+    .drawer-card p,.drawer-card li{font-size:13px;line-height:1.55;color:var(--text);margin:0}
+    .drawer-card ul{padding-left:16px;margin:0;display:grid;gap:8px}
+    .score-grid{display:grid;gap:10px}
+    .score-item{padding:12px;border-radius:14px;background:#F7FDFF;border:1px solid rgba(54,69,79,.08)}
+    .score-item .top{display:flex;justify-content:space-between;gap:12px;align-items:center}
+    .score-item .label{font-size:12px;font-weight:800;color:var(--ipi-charcoal)}
+    .score-item .small{margin-top:5px;font-size:12px;color:var(--muted)}
+    .links{display:flex;gap:10px;flex-wrap:wrap}
+    .link-pill{display:inline-flex;align-items:center;gap:8px;padding:10px 12px;border-radius:999px;background:#fff;border:1px solid rgba(54,69,79,.1);color:var(--ipi-charcoal);text-decoration:none;font-size:12px;font-weight:800;}
+    .form-grid{display:grid;gap:10px}
+    .data-quality-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px;}
+    .dq-card,.model-card{background:#fff;border-radius:20px;padding:18px;border:1px solid rgba(54,69,79,.08);box-shadow:var(--shadow-sm)}
+    .dq-card h3,.model-card h3{margin:0 0 10px;font-size:14px;color:var(--ipi-charcoal)}
+    .dq-card .big,.formula .big{font-size:32px;font-weight:800;letter-spacing:-.03em}
+    .formula{background:linear-gradient(135deg,var(--ipi-dark),var(--ipi-charcoal));color:#fff;padding:20px;border-radius:24px;box-shadow:var(--shadow-md);margin-bottom:16px;}
+    .formula p{margin:10px 0 0;color:rgba(255,255,255,.78);line-height:1.6}
+    .model-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+    .model-card .weight{display:inline-flex;padding:6px 10px;border-radius:999px;background:#EDF6F1;color:var(--ipi-green);font-weight:800;font-size:11px}
+    .threshold-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+    .empty{padding:48px 24px;text-align:center;color:var(--muted)}
+    .toolbar-inline{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .save-view-select{min-width:180px}
+    @media (max-width: 1280px){.kpis{grid-template-columns:repeat(3,1fr)}.hero{grid-template-columns:1fr}.data-quality-grid,.model-grid,.threshold-grid{grid-template-columns:repeat(2,1fr)}}
+    @media (max-width: 1040px){.app{grid-template-columns:1fr;grid-template-rows:78px auto 1fr;grid-template-areas:"top" "side" "main"}.sidebar{border-right:none;border-bottom:1px solid rgba(54,69,79,.08)}.drawer{width:min(100vw, 440px)}}
+    @media (max-width: 760px){.topbar{padding:14px;flex-wrap:wrap;height:auto}.brand-wrap{min-width:0}.top-controls{width:100%;justify-content:stretch}.search-wrap{max-width:none}.kpis,.data-quality-grid,.model-grid,.threshold-grid,.drawer-grid,.drawer-kpis{grid-template-columns:1fr}.main{padding:14px}.sidebar{padding:14px}}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand-wrap">
+        <div class="brand-card">
+          <img src="https://ipintegration.com/wp-content/uploads/2021/12/IPIlogo.svg" alt="IP Integration">
+        </div>
+        <div class="brand-copy">
+          <h1>Prospecting Tool v1</h1>
+          <p>Target Partners · Channel Prioritisation</p>
+        </div>
+      </div>
+      <div class="top-controls">
+        <div class="search-wrap">
+          <span>🔎</span>
+          <input id="globalSearch" type="search" placeholder="Search partner, vendor, industry, notes or city" />
+        </div>
+        <select id="savedViews" class="select save-view-select"></select>
+        <button class="btn" id="saveViewBtn">Save View</button>
+        <button class="btn" id="exportBtn">Export CSV</button>
+        <button class="btn btn-primary" id="refreshBtn">Refresh Scoring</button>
+      </div>
+    </header>
+
+    <aside class="sidebar">
+      <div class="section-card">
+        <div class="side-card-head"><h3>Filters</h3><button class="btn" id="resetFiltersBtn">Reset</button></div>
+        <div class="side-card-body">
+          <div class="filter-group">
+            <h4>Minimum Score</h4>
+            <div class="range-row">
+              <input type="range" id="minScore" min="0" max="5" step="0.1" value="0">
+              <output id="minScoreValue">0.0</output>
+            </div>
+          </div>
+          <div class="filter-group"><h4>Tier</h4><div class="check-grid" id="tierFilters"></div></div>
+          <div class="filter-group"><h4>Vendors</h4><div class="check-grid" id="vendorFilters"></div></div>
+          <div class="filter-group"><h4>Services</h4><div class="check-grid" id="serviceFilters"></div></div>
+          <div class="filter-group"><h4>Confidence</h4><div class="check-grid" id="confidenceFilters"></div></div>
+          <div class="filter-group">
+            <h4>Data Quality</h4>
+            <div class="stack">
+              <label class="check"><input type="checkbox" id="missingTurnoverOnly"> Missing turnover only</label>
+              <label class="check"><input type="checkbox" id="missingLinkedInOnly"> Missing LinkedIn only</label>
+              <label class="check"><input type="checkbox" id="missingNotesOnly"> Missing notes only</label>
+              <label class="check"><input type="checkbox" id="priorityOnly"> Priority only</label>
+            </div>
+          </div>
+          <div class="filter-group">
+            <h4>Status</h4>
+            <select id="statusFilter" class="select">
+              <option value="">All statuses</option>
+              <option>Unreviewed</option>
+              <option>Review Complete</option>
+              <option>Priority Target</option>
+              <option>Outreach Ready</option>
+              <option>In Contact</option>
+              <option>Nurture</option>
+              <option>Not a Fit</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="section-card">
+        <div class="side-card-head"><h3>Working Notes</h3></div>
+        <div class="side-card-body">
+          <div class="stack">
+            <div class="panel-sub">Save filter combinations for repeatable targeting motions. Partner notes and statuses persist locally in your browser.</div>
+            <div class="chip-row">
+              <span class="chip">Tier-first</span>
+              <span class="chip">Legacy wedge</span>
+              <span class="chip">UC base</span>
+              <span class="chip">Data cleanup</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="tabs">
+        <button class="tab active" data-view="prospects">Prospect Search</button>
+        <button class="tab" data-view="quality">Data Quality Queue</button>
+        <button class="tab" data-view="model">Scoring Model</button>
+      </div>
+
+      <section class="view active" id="view-prospects">
+        <div class="hero">
+          <div class="hero-card">
+            <h2>Shortlist faster. <span style="color:var(--ipi-green)">Score transparently.</span> Move to outreach with context.</h2>
+            <p>Built from the Target Partners sheet and aligned to the IPI prospecting model. The interface is list-first because prospecting work is comparison work, not dashboard theatre.</p>
+            <div class="hero-meta">
+              <span class="pill">97 partner records</span>
+              <span class="pill">Weighted scoring</span>
+              <span class="pill">Local workflow state</span>
+              <span class="pill">Brand aligned UI</span>
+            </div>
+          </div>
+          <div class="hero-side">
+            <h3>Current View</h3>
+            <div class="line"><strong id="currentViewCount">0</strong> partners in scope</div>
+            <div class="line"><strong id="currentViewTier1">0</strong> Tier 1 in current result set</div>
+            <div class="line"><strong id="currentViewLegacy">0</strong> legacy displacement candidates</div>
+            <div class="line"><strong id="currentViewMissing">0</strong> records missing turnover</div>
+          </div>
+        </div>
+        <div class="kpis" id="kpiRow"></div>
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3 class="panel-title">Ranked Partner List</h3>
+              <div class="panel-sub">Click a row to open the commercial detail drawer. Sort by clicking table headers.</div>
+            </div>
+            <div class="toolbar-inline">
+              <span class="chip soft" id="tableSummary">0 partners</span>
+              <span class="chip soft" id="sortSummary">Sorted by score</span>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th data-sort="rank">Rank</th>
+                  <th data-sort="name">Partner</th>
+                  <th data-sort="tier">Tier</th>
+                  <th data-sort="weightedScore">Score</th>
+                  <th data-sort="routeToRevenue">Route-to-Revenue</th>
+                  <th data-sort="vendor">Vendor Profile</th>
+                  <th>Services</th>
+                  <th data-sort="locationCity">Location</th>
+                  <th data-sort="employees">Scale</th>
+                  <th>Quick Signals</th>
+                  <th data-sort="confidence">Confidence</th>
+                </tr>
+              </thead>
+              <tbody id="partnerTableBody"></tbody>
+            </table>
+          </div>
+          <div class="empty" id="emptyState" hidden>No partners match the current filter set.</div>
+        </div>
+      </section>
+
+      <section class="view" id="view-quality">
+        <div class="data-quality-grid" id="dataQualityCards"></div>
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h3 class="panel-title">Data Quality Queue</h3>
+              <div class="panel-sub">Use this queue to tighten confidence: fill missing turnover, LinkedIn, location and notes first.</div>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Partner</th>
+                  <th>Missing Fields</th>
+                  <th>Current Confidence</th>
+                  <th>Website</th>
+                  <th>Notes</th>
+                </tr>
+              </thead>
+              <tbody id="qualityTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="view" id="view-model">
+        <div class="formula">
+          <div class="panel-sub" style="color:rgba(255,255,255,.72);text-transform:uppercase;letter-spacing:.08em;font-weight:800">Weighted score formula</div>
+          <div class="big">(Route × 0.40) + (Vendor × 0.20) + (Customer × 0.15) + (Sales × 0.15) + (Scale × 0.05) + (Geo × 0.05)</div>
+          <p>The app stores raw category scores, weighted score, tier, and confidence separately. Confidence is not blended into score to avoid distorting rank order.</p>
+        </div>
+        <div class="model-grid">
+          <div class="model-card"><span class="weight">40%</span><h3>Route-to-Revenue Fit</h3><p>Primary signal. Rewards partners already selling UC and CX, or those with a credible UC base to expand from.</p></div>
+          <div class="model-card"><span class="weight">20%</span><h3>Vendor Displacement</h3><p>Looks for legacy or adjacent estates where IPI has a wedge. Vendor score ≤ 2 caps a partner at Tier 2.</p></div>
+          <div class="model-card"><span class="weight">15%</span><h3>Customer &amp; Use Case Fit</h3><p>Higher scores for contact-centre-heavy and CX-relevant verticals such as healthcare, finance, retail, housing and public sector.</p></div>
+          <div class="model-card"><span class="weight">15%</span><h3>Sales Motion Maturity</h3><p>Proxy for whether they can actually sell. The current version uses services breadth, size and notes-based signals.</p></div>
+          <div class="model-card"><span class="weight">5%</span><h3>Scale Fit</h3><p>Prefers partners large enough to execute but not so large they become slow and politically complex.</p></div>
+          <div class="model-card"><span class="weight">5%</span><h3>Geographic Fit</h3><p>Rewards UK alignment. The current source data is UK-weighted, but the model still surfaces limited or non-UK cases.</p></div>
+        </div>
+        <div class="threshold-grid">
+          <div class="dq-card"><h3>Tier 1 – Strategic Target</h3><div class="big">≥ 4.2</div><div class="panel-sub">High priority direct engagement</div></div>
+          <div class="dq-card"><h3>Tier 2 – Strong Prospect</h3><div class="big">3.6–4.19</div><div class="panel-sub">Targeted outreach and qualification</div></div>
+          <div class="dq-card"><h3>Tier 3 – Opportunistic</h3><div class="big">3.0–3.59</div><div class="panel-sub">Nurture or react to triggers</div></div>
+          <div class="dq-card"><h3>Tier 4 – Low Priority</h3><div class="big">&lt; 3.0</div><div class="panel-sub">Minimal proactive effort</div></div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <aside class="drawer" id="drawer">
+    <button class="drawer-close" id="drawerClose" aria-label="Close">×</button>
+    <div class="drawer-head" id="drawerHead"></div>
+    <div class="drawer-body" id="drawerBody"></div>
+  </aside>
+  <script src="app.js"></script>
+</body>
+</html>
