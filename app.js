@@ -28,6 +28,7 @@ const state = {
     missingTurnoverOnly: false,
     missingLinkedInOnly: false,
     missingNotesOnly: false,
+    dataQueueOnly: false,
     priorityOnly: false,
     status: ""
   },
@@ -149,7 +150,8 @@ function resetFilters(){
   state.filters.search = ""; state.filters.minScore = 0; state.filters.tiers = new Set();
   state.filters.vendors = new Set(); state.filters.services = new Set(); state.filters.confidence = new Set();
   state.filters.missingTurnoverOnly = false; state.filters.missingLinkedInOnly = false;
-  state.filters.missingNotesOnly = false; state.filters.priorityOnly = false; state.filters.status = "";
+  state.filters.missingNotesOnly = false; state.filters.dataQueueOnly = false;
+  state.filters.priorityOnly = false; state.filters.status = "";
   document.getElementById("globalSearch").value = "";
   document.getElementById("minScore").value = 0; document.getElementById("minScoreValue").value = "0.0";
   ["missingTurnoverOnly", "missingLinkedInOnly", "missingNotesOnly", "priorityOnly"].forEach(id => document.getElementById(id).checked = false);
@@ -171,6 +173,7 @@ function filterPartners(){
     if (state.filters.missingTurnoverOnly && !partner.dataQuality?.missingTurnover) return false;
     if (state.filters.missingLinkedInOnly && !partner.dataQuality?.missingLinkedIn) return false;
     if (state.filters.missingNotesOnly && !partner.dataQuality?.missingNotes) return false;
+    if (state.filters.dataQueueOnly && !getDataQualityReasons(partner).length) return false;
     if (state.filters.priorityOnly && !w.priority) return false;
     if (state.filters.status && state.filters.status !== w.status) return false;
     return true;
@@ -322,14 +325,47 @@ function closeDrawer(){ document.getElementById("drawer").classList.remove("open
 function renderKPIs(filtered){
   const queueCount = state.partners.filter(p => getDataQualityReasons(p).length).length;
   const kpis = [
-    ["Total Partners", filtered.length, "Current filtered result set", "📊"],
-    ["Tier 1", filtered.filter(p => (p.tier||"").includes("Tier 1")).length, "Strategic targets in view", "🎯"],
-    ["Priority", filtered.filter(p => getWorkflow(p.name).priority).length, "Priority flagged accounts", "⭐"],
-    ["Outreach Ready", filtered.filter(p => getWorkflow(p.name).status === "Outreach Ready").length, "Workflow stage", "📬"],
-    ["Data Queue", queueCount, "Records needing cleanup", "🧹"],
-    ["Avg Score", filtered.length ? (filtered.reduce((a,p)=>a+Number(p.weightedScore||0),0)/filtered.length).toFixed(2) : "0.00", "Weighted average score", "⚖️"]
+    ["Total Partners", filtered.length, "Current filtered result set", "📊", "total"],
+    ["Tier 1", filtered.filter(p => (p.tier||"").includes("Tier 1")).length, "Strategic targets in view", "🎯", "tier1"],
+    ["Priority", filtered.filter(p => getWorkflow(p.name).priority).length, "Priority flagged accounts", "⭐", "priority"],
+    ["Outreach Ready", filtered.filter(p => getWorkflow(p.name).status === "Outreach Ready").length, "Workflow stage", "📬", "outreach"],
+    ["Data Queue", queueCount, "Records needing cleanup", "🧹", "dataQueue"],
+    ["Avg Score", filtered.length ? (filtered.reduce((a,p)=>a+Number(p.weightedScore||0),0)/filtered.length).toFixed(2) : "0.00", "Weighted average score", "⚖️", "avgScore"]
   ];
-  document.getElementById("kpiRow").innerHTML = kpis.map(k => `<div class="kpi"><div class="top"><span>${k[0]}</span><span>${k[3]}</span></div><div class="value">${k[1]}</div><div class="meta">${k[2]}</div></div>`).join("");
+  document.getElementById("kpiRow").innerHTML = kpis
+    .map(k => `<div class="kpi" data-kpi="${k[4]}"><div class="top"><span>${k[0]}</span><span>${k[3]}</span></div><div class="value">${k[1]}</div><div class="meta">${k[2]}</div></div>`)
+    .join("");
+  document.querySelectorAll("#kpiRow .kpi").forEach(card => {
+    card.addEventListener("click", () => applyKpiFilter(card.dataset.kpi));
+  });
+}
+
+function applyKpiFilter(kpi){
+  if (kpi === "avgScore") return;
+  state.filters.tiers.clear();
+  state.filters.priorityOnly = false;
+  state.filters.status = "";
+  state.filters.dataQueueOnly = false;
+  document.getElementById("priorityOnly").checked = false;
+  document.getElementById("statusFilter").value = "";
+
+  if (kpi === "tier1") {
+    state.partners.forEach(partner => {
+      if ((partner.tier || "").includes("Tier 1")) state.filters.tiers.add(partner.tier);
+    });
+    buildDynamicFilters();
+  } else if (kpi === "priority") {
+    state.filters.priorityOnly = true;
+    document.getElementById("priorityOnly").checked = true;
+  } else if (kpi === "outreach") {
+    state.filters.status = "Outreach Ready";
+    document.getElementById("statusFilter").value = "Outreach Ready";
+  } else if (kpi === "dataQueue") {
+    state.filters.dataQueueOnly = true;
+  } else if (kpi === "total") {
+    buildDynamicFilters();
+  }
+  renderAll();
 }
 
 function renderCurrentViewStats(items){
