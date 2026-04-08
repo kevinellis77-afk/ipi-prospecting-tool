@@ -1,7 +1,3 @@
-
-Use this `AGENTS.md` exactly as your first version:
-
-```md
 # AGENTS.md
 
 ## Project purpose

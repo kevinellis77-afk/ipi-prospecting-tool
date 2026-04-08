@@ -30,7 +30,8 @@ const state = {
     missingNotesOnly: false,
     dataQueueOnly: false,
     priorityOnly: false,
-    status: ""
+    status: "",
+    engagedOnly: false
   },
   qualityFilters: new Set(),
   workflow: loadJSON(STORAGE_KEYS.workflow, {}),
@@ -47,13 +48,22 @@ function getWorkflow(name){
     status: STATUS_OPTIONS.includes(item.status) ? item.status : "Unreviewed",
     priority: !!item.priority,
     owner: item.owner || "",
-    notes: item.notes || ""
+    notes: item.notes || "",
+    lastUpdated: item.lastUpdated || ""
   };
 }
 
 function setWorkflow(name, patch){
-  state.workflow[name] = { ...getWorkflow(name), ...patch };
+  state.workflow[name] = { ...getWorkflow(name), ...patch, lastUpdated: new Date().toISOString() };
   persistWorkflow();
+}
+
+function statusClass(status){
+  return `status-${String(status || "Unreviewed").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}`;
+}
+
+function isEngagedStatus(status){
+  return ["Review Complete", "Priority Target", "Outreach Ready", "In Contact", "Nurture"].includes(status);
 }
 
 function showError(message){
@@ -151,7 +161,7 @@ function resetFilters(){
   state.filters.vendors = new Set(); state.filters.services = new Set(); state.filters.confidence = new Set();
   state.filters.missingTurnoverOnly = false; state.filters.missingLinkedInOnly = false;
   state.filters.missingNotesOnly = false; state.filters.dataQueueOnly = false;
-  state.filters.priorityOnly = false; state.filters.status = "";
+  state.filters.priorityOnly = false; state.filters.status = ""; state.filters.engagedOnly = false;
   document.getElementById("globalSearch").value = "";
   document.getElementById("minScore").value = 0; document.getElementById("minScoreValue").value = "0.0";
   ["missingTurnoverOnly", "missingLinkedInOnly", "missingNotesOnly", "priorityOnly"].forEach(id => document.getElementById(id).checked = false);
@@ -176,6 +186,7 @@ function filterPartners(){
     if (state.filters.dataQueueOnly && !getDataQualityReasons(partner).length) return false;
     if (state.filters.priorityOnly && !w.priority) return false;
     if (state.filters.status && state.filters.status !== w.status) return false;
+    if (state.filters.engagedOnly && !isEngagedStatus(w.status)) return false;
     return true;
   });
 }
@@ -199,7 +210,8 @@ function renderTable(items){
     const w = getWorkflow(p.name);
     const c = p.scoring || {};
     const scoreMini = `R${c.routeToRevenue?.score||"-"}/V${c.vendor?.score||"-"}/C${c.customer?.score||"-"}/S${c.sales?.score||"-"}/Sc${c.scale?.score||"-"}/G${c.geo?.score||"-"}`;
-    return `<tr data-partner="${escapeAttr(p.name)}">
+    const statusCls = statusClass(w.status);
+    return `<tr data-partner="${escapeAttr(p.name)}" class="status-row ${statusCls}">
       <td>${p.rank ?? "—"}</td>
       <td class="name-cell"><div class="name-main">${escapeHtml(p.name)}</div><div class="name-sub">${escapeHtml(p.normalized?.employeeBand || "Unknown")} · ${escapeHtml(p.normalized?.geoBand || "Unknown")}</div></td>
       <td><span class="badge ${tierClass(p.tier)}">${escapeHtml((p.tier || "").replace(" – ", " · "))}</span></td>
@@ -209,7 +221,7 @@ function renderTable(items){
       <td><div class="chip-row">${(p.services||[]).slice(0,4).map(s=>`<span class="chip">${escapeHtml(s)}</span>`).join("")}</div></td>
       <td>${escapeHtml([p.locationCity,p.locationState].filter(Boolean).join(", ") || "—")}</td>
       <td>${escapeHtml(formatEmployees(p.employees, p.employeesRaw))} / ${escapeHtml(formatTurnover(p.turnoverM))}</td>
-      <td><div class="chip-row">${w.priority ? '<span class="chip">Priority</span>' : ''}<span class="chip soft">${escapeHtml(w.status)}</span></div></td>
+      <td><div class="chip-row">${w.priority ? '<span class="chip">Priority</span>' : ''}<span class="chip status-chip ${statusCls}">${escapeHtml(w.status)}</span></div></td>
       <td><span class="badge ${p.confidence==='High'?'tier1':p.confidence==='Medium'?'tier2':'tier4'}">${escapeHtml(p.confidence || 'Low')}</span></td>
     </tr>`;
   }).join("");
@@ -290,7 +302,7 @@ function openDrawer(name){
   const rows = whyScoreRows(p);
   document.getElementById("drawer").classList.add("open");
   document.getElementById("drawerHead").innerHTML = `<div><div class="chip-row"><span class="badge ${tierClass(p.tier)}">${escapeHtml(p.tier||"—")}</span><span class="badge ${p.confidence==='High'?'tier1':p.confidence==='Medium'?'tier2':'tier4'}">${escapeHtml(p.confidence || 'Low')} confidence</span></div><h2 class="drawer-title">${escapeHtml(p.name)}</h2></div>
-  <div class="drawer-kpis"><div class="drawer-card"><h4>Weighted score</h4><p style="font-size:30px;font-weight:800">${fmt(p.weightedScore)}</p></div><div class="drawer-card"><h4>Status</h4><p>${escapeHtml(w.status)}</p></div></div>`;
+  <div class="drawer-kpis"><div class="drawer-card"><h4>Weighted score</h4><p style="font-size:30px;font-weight:800">${fmt(p.weightedScore)}</p></div><div class="drawer-card"><h4>Status</h4><p><span class="chip status-chip ${statusClass(w.status)}">${escapeHtml(w.status)}</span></p></div></div>`;
 
   document.getElementById("drawerBody").innerHTML = `
   <div class="drawer-card"><h4>Workflow</h4><div class="form-grid">
@@ -299,6 +311,7 @@ function openDrawer(name){
     <label>Owner<input class="select" id="drawerOwner" value="${escapeAttr(w.owner)}" placeholder="Account owner"></label>
     <label>Notes<textarea class="textarea" id="drawerNotes" placeholder="Prospecting notes">${escapeHtml(w.notes)}</textarea></label>
     <button class="btn btn-accent" id="saveWorkflowBtn">Save workflow state</button>
+    <div class="panel-sub" id="workflowAutosaveMsg">Changes auto-save locally${w.lastUpdated ? ` · Last saved ${new Date(w.lastUpdated).toLocaleString()}` : ""}</div>
   </div></div>
 
   <div class="drawer-card"><h4>Why this score</h4>
@@ -308,15 +321,33 @@ function openDrawer(name){
 
   <div class="drawer-card"><h4>Suggested angle</h4><p>${escapeHtml(suggestedAngles(p))}</p></div>`;
 
-  document.getElementById("saveWorkflowBtn").addEventListener("click", () => {
+  const saveWorkflowFromDrawer = () => {
     setWorkflow(name, {
       status: document.getElementById("drawerStatus").value,
       priority: document.getElementById("drawerPriority").checked,
       owner: document.getElementById("drawerOwner").value.trim(),
       notes: document.getElementById("drawerNotes").value.trim()
     });
+    const msg = document.getElementById("workflowAutosaveMsg");
+    if (msg) msg.textContent = `Changes auto-save locally · Last saved ${new Date(getWorkflow(name).lastUpdated).toLocaleString()}`;
+  };
+
+  document.getElementById("saveWorkflowBtn").addEventListener("click", () => {
+    saveWorkflowFromDrawer();
     renderAll();
     openDrawer(name);
+  });
+
+  document.getElementById("drawerStatus").addEventListener("input", () => {
+    saveWorkflowFromDrawer();
+    renderAll();
+  });
+  document.getElementById("drawerPriority").addEventListener("change", () => {
+    saveWorkflowFromDrawer();
+    renderAll();
+  });
+  ["drawerOwner", "drawerNotes"].forEach(id => {
+    document.getElementById(id).addEventListener("input", saveWorkflowFromDrawer);
   });
 }
 
@@ -329,6 +360,7 @@ function renderKPIs(filtered){
     ["Tier 1", filtered.filter(p => (p.tier||"").includes("Tier 1")).length, "Strategic targets in view", "🎯", "tier1"],
     ["Priority", filtered.filter(p => getWorkflow(p.name).priority).length, "Priority flagged accounts", "⭐", "priority"],
     ["Outreach Ready", filtered.filter(p => getWorkflow(p.name).status === "Outreach Ready").length, "Workflow stage", "📬", "outreach"],
+    ["Engaged", filtered.filter(p => isEngagedStatus(getWorkflow(p.name).status)).length, "Reviewed or in motion", "🤝", "engaged"],
     ["Data Queue", queueCount, "Records needing cleanup", "🧹", "dataQueue"],
     ["Avg Score", filtered.length ? (filtered.reduce((a,p)=>a+Number(p.weightedScore||0),0)/filtered.length).toFixed(2) : "0.00", "Weighted average score", "⚖️", "avgScore"]
   ];
@@ -346,6 +378,7 @@ function applyKpiFilter(kpi){
   state.filters.priorityOnly = false;
   state.filters.status = "";
   state.filters.dataQueueOnly = false;
+  state.filters.engagedOnly = false;
   document.getElementById("priorityOnly").checked = false;
   document.getElementById("statusFilter").value = "";
 
@@ -362,6 +395,8 @@ function applyKpiFilter(kpi){
     document.getElementById("statusFilter").value = "Outreach Ready";
   } else if (kpi === "dataQueue") {
     state.filters.dataQueueOnly = true;
+  } else if (kpi === "engaged") {
+    state.filters.engagedOnly = true;
   } else if (kpi === "total") {
     buildDynamicFilters();
   }

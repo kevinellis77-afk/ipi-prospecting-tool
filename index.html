@@ -110,6 +110,22 @@
     .tier2{background:#F3EDF1;color:var(--ipi-mauve)}
     .tier3{background:#F2E7E5;color:var(--ipi-salmon)}
     .tier4{background:#EAECED;color:var(--muted)}
+    .status-chip{border:1px solid transparent}
+    .status-unreviewed{background:#EAECED;color:var(--muted)}
+    .status-review-complete{background:#EEF3F6;color:var(--ipi-charcoal)}
+    .status-priority-target{background:#F3EDF1;color:var(--ipi-mauve-dark)}
+    .status-outreach-ready{background:#EDF6F1;color:var(--ipi-green)}
+    .status-in-contact{background:#E9F3F7;color:var(--ipi-slate)}
+    .status-nurture{background:#F7EFEA;color:#8D624F}
+    .status-not-a-fit{background:#F7E9E7;color:#8D4A42}
+    .status-row{box-shadow:inset 4px 0 0 transparent}
+    .status-row.status-unreviewed{box-shadow:inset 4px 0 0 #AEB8BF}
+    .status-row.status-review-complete{box-shadow:inset 4px 0 0 #7F97A5}
+    .status-row.status-priority-target{box-shadow:inset 4px 0 0 var(--ipi-mauve)}
+    .status-row.status-outreach-ready{box-shadow:inset 4px 0 0 var(--ipi-green)}
+    .status-row.status-in-contact{box-shadow:inset 4px 0 0 var(--ipi-slate)}
+    .status-row.status-nurture{box-shadow:inset 4px 0 0 var(--ipi-salmon)}
+    .status-row.status-not-a-fit{box-shadow:inset 4px 0 0 #A86D66}
     .score-cell{min-width:120px}
     .score-main{display:flex;align-items:center;gap:8px;font-weight:800}
     .score-bar{height:8px;border-radius:999px;background:#EAECED;overflow:hidden;margin-top:6px}
@@ -224,7 +240,7 @@
         <div class="side-card-head"><h3>Working Notes</h3></div>
         <div class="side-card-body">
           <div class="stack">
-            <div class="panel-sub">Save filter combinations for repeatable targeting motions. Partner notes and statuses persist locally in your browser.</div>
+            <div class="panel-sub">Save filter combinations for repeatable targeting motions. Partner notes, owner, and statuses auto-save locally in your browser and persist across refreshes.</div>
             <div class="chip-row">
               <span class="chip">Tier-first</span>
               <span class="chip">Legacy wedge</span>
@@ -269,7 +285,7 @@
           <div class="panel-head">
             <div>
               <h3 class="panel-title">Ranked Partner List</h3>
-              <div class="panel-sub">Click a row to open the commercial detail drawer. Sort by clicking table headers.</div>
+              <div class="panel-sub">Click a row to open the commercial detail drawer. Sort by clicking table headers. Left border and status pill colours show engagement stage.</div>
             </div>
             <div class="toolbar-inline">
               <span class="chip soft" id="tableSummary">0 partners</span>
